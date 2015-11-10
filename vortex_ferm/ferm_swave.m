@@ -1,122 +1,98 @@
 function calc_ferm()
 
-  % Calculation grid, square with Lx*Ly size, Nx*Ny points.
+  Nx=100;
+  Ny=100;
+  Lx=1;
+  Ly=1;
 
-  Nx=85;
-  Ny=85;
-  Lx=400;
-  Ly=400;
+  lF = 0.027;  % 1/kF
+  xi  = 0.07;   %
+  xiv = 0.75;    % vortex size
 
-  kF = 0.2;   %
-  m  = 1;   % particle mass
-  xi = 200; % vortex size
-  Delta=0.01;
+  l = 3; % state quantum number
 
-  xx=linspace(-Lx/2, Lx/2, Nx);
-  yy=linspace(-Ly/2, Ly/2, Ny);
-  dx=Lx/(Nx-1);
-  dy=Ly/(Ny-1);
+  stype = 0;  %superfluid type
+    % 0 -- s-wave superconductor, 1Q vortex
+    % 1 -- A-phase with l||z, 1Q vortex
+    % 2 -- polar phase, orbital 1/2-quantum vortex
+
+  xx=linspace(-Lx, Lx, Nx);
+  yy=linspace(-Ly, Ly, Ny);
+  dx=2*Lx/(Nx-1);
+  dy=2*Ly/(Ny-1);
 
   [xxx,yyy] = meshgrid(xx,yy);
   rrr = sqrt(xxx.^2 + yyy.^2);
-  N=[Nx Ny];
+  phi = atan2(yyy,xxx);
+  N=Nx*Ny;
 
+  % diagonal matrices and differential operators
+  Ix = speye(Nx,Nx);
+  Iy = speye(Ny,Ny);
+  I = speye(N,N);
+  Ex = sparse(2:Nx,1:Nx-1,1,Nx,Nx);
+  Ey = sparse(2:Ny,1:Ny-1,1,Ny,Ny);
+  L = kron((Ex+Ex'-2*Ix)/dx^2, Iy)...
+    + kron(Ix, (Ey+Ey'-2*Iy)/dy^2);
+  Dx = kron((Ex-Ex')/(2*dx), Iy);
+  Dy = kron(Ix, (Ey-Ey')/(2*dy));
 
-  % differential operators:
-  M = sparse(prod(N),prod(N));
-  Dxx = M; Dyy = M; % d2/dx2, d2/dy2
-  Dx  = M;  Dy = M; % d/dx, d/dy
-  DD  = M; % diagonal part of the Delta operator
-
-  % other space-dependent values
-  D1 = Delta * (1-exp(-rrr/xi)) .* exp(1i*atan2(yyy,xxx));
-
-  % fill matrices
-  for ix=1:N(1)
-    for iy=1:N(2)
-      p0  = sub2ind(N, ix,iy);
-      if ix>1    pxm = sub2ind(N, ix-1,iy); end
-      if ix<Nx   pxp = sub2ind(N, ix+1,iy); end
-      if iy>1    pym = sub2ind(N, ix,iy-1); end
-      if iy<Ny   pyp = sub2ind(N, ix,iy+1); end
-
-      if ix>1 && iy>1    pmm = sub2ind(N, ix-1,iy-1); end
-      if ix<1 && iy<Ny   pmp = sub2ind(N, ix-1,iy+1); end
-      if ix<Nx && iy>1   ppm = sub2ind(N, ix+1,iy-1); end
-      if ix<Nx && iy<Ny  ppp = sub2ind(N, ix+1,iy+1); end
-
-      % Dxx, Dyy (zero boundary cond)
-      if 1
-        Dxx(p0,p0) = -2/dx^2;
-        Dyy(p0,p0) = -2/dy^2;
-        if (ix>1)  Dxx(p0,pxm) = 1/dx^2; end
-        if (ix<Nx) Dxx(p0,pxp) = 1/dx^2; end
-        if (iy>1)  Dyy(p0,pym) = 1/dy^2; end
-        if (iy<Ny) Dyy(p0,pyp) = 1/dy^2; end
-      else  % 9-pt
-        Dxx(p0,p0) = -1/(0.3*dx^2);
-        Dyy(p0,p0) = -1/(0.3*dy^2);
-        if ix>1  Dxx(p0,pxm) = 1/(1.5*dx^2); end
-        if ix<Nx Dxx(p0,pxp) = 1/(1.5*dx^2); end
-        if iy>1  Dyy(p0,pym) = 1/(1.5*dy^2); end
-        if iy<Ny Dyy(p0,pyp) = 1/(1.5*dy^2); end
-        if ix>1 && iy>1    Dxx(p0,pmm) = 1/(6.0*dx^2); end
-        if ix<1 && iy<Ny   Dxx(p0,pmp) = 1/(6.0*dx^2); end
-        if ix<Nx && iy>1   Dxx(p0,ppm) = 1/(6.0*dy^2); end
-        if ix<Nx && iy<Ny  Dxx(p0,ppp) = 1/(6.0*dy^2); end
-      end
-
-
-
-      % Dx,Dy (zero boundary cond)
-      if (ix>1)  Dx(p0,pxm) = -1/(2*dx); end
-      if (ix<Nx) Dx(p0,pxp) =  1/(2*dx); end
-      if (iy>1)  Dy(p0,pym) = -1/(2*dy); end
-      if (iy<Ny) Dy(p0,pyp) =  1/(2*dy); end
-
-      % diagonal part of the Delta operator
-      DD(p0,p0) = D1(iy,ix);
-%      DD(p0,p0) = Delta;
-    end
+  function DU = spdiag(U)
+    N=prod(size(U));
+    DU=sparse(1:N,1:N, reshape(U,N,1),N,N);
   end
 
-  % unit matrix
-  I = diag(ones(Nx*Ny,1));
-
   % Kinetic energy
-  E = ( -Dxx -Dyy - I*kF^2 )/(2*m);
-
-  % Delta operator
-  D=DD;
-
-  find_figure('a'); clf; hold on;
-  %surface(xx,yy, abs(D1) )
-  %spy(E)
-  %spy(D)
+  E = ( - L - I/lF^2 ) * xi*lF/2;
 
   % 2x2 Hamiltonian:
-  H = [ E D ; conj(D), -E];
+  if stype==0
+    % s-wave superconductor, 1Q vortex
+    D0 = (1-exp(-rrr/xiv)) .* exp(1i*phi);
+    D  = spdiag(D0);
+    H = [ E, D
+             conj(D), -E];
+  elseif stype==1
+    % A-phase with l||z, 1Q vortex
+    D0 = (1-exp(-rrr/xiv)) .* exp(1i*phi);
+    D  = spdiag(D0);
+    H = [ E, (-1i*Dx + Dy)*lF*D
+             (-1i*Dx - Dy)*lF*conj(D), -E];
+  elseif stype==2
+    % polar phase, orbital 1/2-quantum vortex
+    D0 = (1-exp(-rrr/xiv)) .* exp(1i*phi/2);
+    D  = spdiag(D0);
+    mx = spdiag(cos(phi/2));
+    my = spdiag(sin(phi/2));
+    u = -1i*(Dx*mx + Dy*my)*lF;
+    H = [ E, u*D
+             u*conj(D), -E];
+  else
+    fprintf('Wrong stype parameter\n');
+    return;
+  end
 
-  mgap = 1.12E-4;
-
-  [V,D] = eigs(H, 1, 1*mgap);
-  nn=1
+  mgap = 2*0.3636 *lF/xiv;
+  nn=1;
+  [V,E] = eigs(H, nn, l*mgap);
   U1 = reshape( V(1:Nx*Ny,nn), Nx,Ny);
   U2 = reshape( V(Nx*Ny+1:2*Nx*Ny,nn), Nx,Ny);
-  D(nn,nn)
+  E(nn,nn)
+
+  find_figure('a'); clf; hold on;
 
   m=max(max([abs(U1) abs(U2)]));
   clim=[-m m];
   h(1)=subplot(2,2,1);  hold on; title('real(U1)');
   surface(yy, xx, real(U1), 'EdgeColor','none')
   caxis(clim);
-  h(2)=subplot(2,2,2);  hold on;
+  h(2)=subplot(2,2,2);  hold on; title('real(U2)');
   surface(yy, xx, real(U2), 'EdgeColor','none')
   caxis(clim);
-  h(3)=subplot(2,2,3);  hold on;
+  h(3)=subplot(2,2,3);  hold on; title('imag(U1)');
   surface(yy, xx, imag(U1), 'EdgeColor','none')
   caxis(clim);
-  h(4)=subplot(2,2,4);  hold on;
+  h(4)=subplot(2,2,4);  hold on; title('imag(U2)');
   surface(yy, xx, imag(U2), 'EdgeColor','none')
   caxis(clim);
 
