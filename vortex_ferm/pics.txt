@@ -1,0 +1,11 @@
+swave1.png -- Nx=100; Ny=100; Lx=400; Ly=400; kF=0.2; m=1; xi = 200; Delta=0.01;
+swave2.png -- same e0 = -3/2 mgap
+
+spwave1.png spwave2.png spwave3.png -- wrong calculation but nice pics
+  Nx=80; Ny=80; Lx=400; Ly=400; kF= 0.2; m=1; xi=200; Delta=0.01;
+  D = (0.1*I*kF + Dx + 1i*Dy)/kF .* DD;
+spwave4.png -- same, but e0=1.24e-04
+
+pwave1.png e0 = mgap = 2.353e-4
+pwave2.png e0 = 0
+  Nx=50; Ny=50; Lx=400; Ly=400; kF = 0.18; m=1; xi=150; Delta=0.01;

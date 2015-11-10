@@ -7,10 +7,12 @@ function calc_ferm()
   Lx=400;
   Ly=400;
 
-  kF = 0.2;   %
+  kF = 0.18;   %
   m  = 1;   % particle mass
-  xi = 200; % vortex size
+  xi = 150; % vortex size
   Delta=0.01;
+%  Ef = kF/2/m;
+%  xi=Ef/Delta;
 
   xx=linspace(-Lx/2, Lx/2, Nx);
   yy=linspace(-Ly/2, Ly/2, Ny);
@@ -40,33 +42,13 @@ function calc_ferm()
       if iy>1    pym = sub2ind(N, ix,iy-1); end
       if iy<Ny   pyp = sub2ind(N, ix,iy+1); end
 
-      if ix>1 && iy>1    pmm = sub2ind(N, ix-1,iy-1); end
-      if ix<1 && iy<Ny   pmp = sub2ind(N, ix-1,iy+1); end
-      if ix<Nx && iy>1   ppm = sub2ind(N, ix+1,iy-1); end
-      if ix<Nx && iy<Ny  ppp = sub2ind(N, ix+1,iy+1); end
-
       % Dxx, Dyy (zero boundary cond)
-      if 1
-        Dxx(p0,p0) = -2/dx^2;
-        Dyy(p0,p0) = -2/dy^2;
-        if (ix>1)  Dxx(p0,pxm) = 1/dx^2; end
-        if (ix<Nx) Dxx(p0,pxp) = 1/dx^2; end
-        if (iy>1)  Dyy(p0,pym) = 1/dy^2; end
-        if (iy<Ny) Dyy(p0,pyp) = 1/dy^2; end
-      else  % 9-pt
-        Dxx(p0,p0) = -1/(0.3*dx^2);
-        Dyy(p0,p0) = -1/(0.3*dy^2);
-        if ix>1  Dxx(p0,pxm) = 1/(1.5*dx^2); end
-        if ix<Nx Dxx(p0,pxp) = 1/(1.5*dx^2); end
-        if iy>1  Dyy(p0,pym) = 1/(1.5*dy^2); end
-        if iy<Ny Dyy(p0,pyp) = 1/(1.5*dy^2); end
-        if ix>1 && iy>1    Dxx(p0,pmm) = 1/(6.0*dx^2); end
-        if ix<1 && iy<Ny   Dxx(p0,pmp) = 1/(6.0*dx^2); end
-        if ix<Nx && iy>1   Dxx(p0,ppm) = 1/(6.0*dy^2); end
-        if ix<Nx && iy<Ny  Dxx(p0,ppp) = 1/(6.0*dy^2); end
-      end
-
-
+      Dxx(p0,p0) = -2/dx^2;
+      Dyy(p0,p0) = -2/dy^2;
+      if (ix>1)  Dxx(p0,pxm) = 1/dx^2; end
+      if (ix<Nx) Dxx(p0,pxp) = 1/dx^2; end
+      if (iy>1)  Dyy(p0,pym) = 1/dy^2; end
+      if (iy<Ny) Dyy(p0,pyp) = 1/dy^2; end
 
       % Dx,Dy (zero boundary cond)
       if (ix>1)  Dx(p0,pxm) = -1/(2*dx); end
@@ -76,7 +58,6 @@ function calc_ferm()
 
       % diagonal part of the Delta operator
       DD(p0,p0) = D1(iy,ix);
-%      DD(p0,p0) = Delta;
     end
   end
 
@@ -87,23 +68,26 @@ function calc_ferm()
   E = ( -Dxx -Dyy - I*kF^2 )/(2*m);
 
   % Delta operator
-  D=DD;
+  Do =  (-1i*Dx + Dy)/kF * DD;
+  Dc =  (-1i*Dx - Dy)/kF * conj(DD);
+  % 2x2 Hamiltonian:
+  H = [ E Do ; Dc, -E];
 
   find_figure('a'); clf; hold on;
   %surface(xx,yy, abs(D1) )
-  %spy(E)
-  %spy(D)
+  %spy(H)
+  %return
 
-  % 2x2 Hamiltonian:
-  H = [ E D ; conj(D), -E];
-
-  mgap = 1.12E-4;
-
-  [V,D] = eigs(H, 1, 1*mgap);
+  mgap=2.986e-4;
+  [V,D] = eigs(H, 1, 0*mgap);
+  
   nn=1
   U1 = reshape( V(1:Nx*Ny,nn), Nx,Ny);
   U2 = reshape( V(Nx*Ny+1:2*Nx*Ny,nn), Nx,Ny);
   D(nn,nn)
+
+%  U1=U1./exp(1i*kF*rrr);
+%  U2=U2./exp(1i*kF*rrr);
 
   m=max(max([abs(U1) abs(U2)]));
   clim=[-m m];
@@ -120,6 +104,6 @@ function calc_ferm()
   surface(yy, xx, imag(U2), 'EdgeColor','none')
   caxis(clim);
 
-%  print /tmp/swave2.png -noui -dpng
+%  print /tmp/spwave2.png -noui -dpng
 
 end
