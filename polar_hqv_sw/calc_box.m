@@ -1,6 +1,7 @@
 function hqv()
 
   % calculate lg in a box
+  addpath lib
 
   find_figure('hqv wave 1');
 

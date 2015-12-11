@@ -1,4 +1,5 @@
 function res = calc_text(R, Nd, Lx,Ly, M)
+  % calculate static texture - pair of 2 vortixes with winding number M
 
   if nargin<5; M=0.5; end
 
@@ -54,10 +55,10 @@ function res = calc_text(R, Nd, Lx,Ly, M)
       if iy>1  Dyy(i0,iym) = 1/dy^2; end
       if ix<Nx Dxx(i0,ixp) = 1/dx^2; end
       if iy<Ny Dyy(i0,iyp) = 1/dy^2; end
-      % Neumann boundary condition, F'=0
-      if ix==1  Dxx(i0,ixp) = 2/dx^2; end
-      if ix==Nx Dxx(i0,ixm) = 2/dx^2; end
-      if iy==Ny Dyy(i0,iym) = 2/dy^2; end
+      % boundary conditions
+      if ix==1  Dxx(i0,ixp) = 2/dx^2; end % F'=0
+      if ix==Nx Dxx(i0,ixm) = 1/dx^2; end % F=0
+      if iy==Ny Dyy(i0,iym) = 1/dy^2; end % F=0
     end
   end
 
@@ -71,26 +72,44 @@ function res = calc_text(R, Nd, Lx,Ly, M)
   res.xi  = xi;
   res.dx  = dx;
   res.dy  = dy;
-
+  res.ixv = ixv;
 
   % alpha_D angle
   res.Nx  = 2*Nx-1;
   res.Ny  = 2*Ny+1;
   res.xx  = [-xx(end:-1:2) xx];
   res.yy  = [-yy(end:-1:1)-dy 0 yy+dy];
+
   res.A  = horzcat(...
         vertcat( M*2*pi-X(end:-1:2,end:-1:1), M*2*pi-X(:,end:-1:1)),...
         vertcat( Bx(end:-1:2), Bx),...
         vertcat( X(end:-1:2,:), X));
 
+%  res.A  = horzcat(...
+%        vertcat( M*2*pi-X(end:-1:2,end:-1:1), M*2*pi-X(:,end:-1:1)),...
+%        M*pi + zeros(res.Nx,1),...
+%        vertcat( X(end:-1:2,:), X));
+
   % derivatives
   res.Ax = zeros(size(res.A));
-  res.Ax(2:end-1,:) = res.A(3:end,:)-res.A(1:end-2,:);
-  res.Ax=fix_der(M, res.Ax)/(2*dx);
-
   res.Ay = zeros(size(res.A));
+
+  U=zeros(1,res.Ny);
+  U(1:Ny)=2*pi*M;
+  U(Ny+1)=pi*M;
+
+  res.Ax(2:end-1,:) = res.A(3:end,:)-res.A(1:end-2,:);
+  res.Ax(1,:) = res.A(2,:);
+  res.Ax(end,:) = res.A(end-1,:);
+  res.Ax=fix_der(M, res.Ax)/(2*dx);
+  res.Ax(:,Ny+1)=0;
+
   res.Ay(:,2:end-1) = res.A(:,3:end)-res.A(:,1:end-2);
+  res.Ay(:,1) = res.A(:,2);
+  res.Ay(:,end) = res.A(:,end-1);
   res.Ay=fix_der(M, res.Ay)/(2*dy);
+
+
 
 end
 
