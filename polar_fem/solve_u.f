@@ -175,60 +175,51 @@ c ... impose boundary conditions (assume nRow = nCol)
 
 
 C ======================================================================
-C  Diffusion tensor             
+C  Diffusion tensor
 C ======================================================================
       Integer Function Ddiff_u(x, y, label, dDATA, iDATA, iSYS, Coef)
-      Include 'th.fh'
-      include 'fem2Dtri.fd'
+        Include 'th.fh'
+        include 'fem2Dtri.fd'
 
-      Real*8  dDATA(*), x, y, Coef(MaxTensorSize, 4)
-      Integer iDATA(*), label, iSYS(*)
+        Real*8  dDATA(*), x, y, Coef(MaxTensorSize, 4)
+        Integer iDATA(*), label, iSYS(*)
 
-      iSYS(1) = 1
-      iSYS(2) = 1
+        iSYS(1) = 1
+        iSYS(2) = 1
 
-      if (labelT(iSYS(3)).eq.1) then
-        Coef(1,1) = PHYS_SIGMA * x
-      else
-        Coef(1,1) = PHYS_SIGMAd * x
-      endif
+        Coef(1,1) = 1
 
-      Ddiff_u = TENSOR_SCALAR
+        Ddiff_u = TENSOR_SCALAR
 
-      Return
       End
-
-
 
 C ======================================================================
 C Boundary condition
 C ======================================================================
       Integer Function Dbc_u(x, y, label, dDATA, iDATA, iSYS, eBC)
-      Include 'th.fh'
-      Include 'fem2Dtri.fd'
+        Include 'th.fh'
+        Include 'fem2Dtri.fd'
 
-      Real*8  dDATA(*), x, y, eBC(MaxTensorSize, *)
-      Integer iDATA(*), label, iSYS(*)
+        Real*8  dDATA(*), x, y, eBC(MaxTensorSize, *)
+        Integer iDATA(*), label, iSYS(*)
 
-      iSYS(1) = 1
-      iSYS(2) = 1
+        iSYS(1) = 1
+        iSYS(2) = 1
 
-      If (label.EQ.2) Then
-         Dbc_u = BC_DIRICHLET
-         eBC(1,1) = 0D0
-      Else If (label.EQ.3) Then
-         Dbc_u = BC_DIRICHLET
-         eBC(1,1) = PHYS_U0/2.0D0
-      Else If (label.EQ.1) Then
-         Dbc_u = BC_NULL
-         eBC(1,1) = 0D0
-      Else
-         Dbc_u = BC_NEUMANN
-         eBC(1,1) = 0D0
-      End if
-
-      Return
-      End
+        if (label.EQ.0) Then
+          Dbc_u = BC_NEUMANN
+          eBC(1,1) = 0D0
+        elseif (label.EQ.1) Then
+          Dbc_u = BC_DIRICHLET
+          eBC(1,1) = 0D0
+        elseif (label.EQ.2) Then
+          Dbc_u = BC_DIRICHLET
+          eBC(1,1) = Pi/2.0D0
+        else
+          Dbc_u = BC_NEUMANN
+          eBC(1,1) = 0D0
+        endif
+      end
 
 
 
@@ -236,16 +227,15 @@ C ======================================================================
 C Right hand side
 C ======================================================================
       Integer Function Drhs_u(x, y, label, dDATA, iDATA, iSYS, F)
-      Include 'fem2Dtri.fd'
+        Include 'fem2Dtri.fd'
 
-      Real*8  dDATA(*), x, y, F(MaxTensorSize, *)
-      Integer iDATA(*), label, iSYS(*)
+        Real*8  dDATA(*), x, y, F(MaxTensorSize, *)
+        Integer iDATA(*), label, iSYS(*)
 
-      iSYS(1) = 1
-      iSYS(2) = 1
+        iSYS(1) = 1
+        iSYS(2) = 1
 
-      F(1, 1) = 0D0
-      Drhs_u = TENSOR_SCALAR
+        F(1, 1) = 0D0
+        Drhs_u = TENSOR_SCALAR
 
-      Return
       End

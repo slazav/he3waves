@@ -58,11 +58,11 @@ C Generate a mesh
      &           nb, bnd, labelB)
         If (iERR.ne.0) stop ' error in function aft2dfront'
 
-        labelB(1) = 5     ! center line, a'=0
-        labelB(2) = 4     ! upper edge, a=0
-        labelB(3) = 4     ! right edge, a=0
-        labelB(4) = 4     ! cut, a=0
-        labelB(5) = 3     ! a=pi/2
+        labelB(1) = 0     ! center line, a'=0
+        labelB(2) = 1     ! upper edge, a=0
+        labelB(3) = 1     ! right edge, a=0
+        labelB(4) = 1     ! cut, a=0
+        labelB(5) = 2     ! a=pi/2
 
         nc = 0
 

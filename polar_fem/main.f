@@ -8,10 +8,10 @@ c ======================================================================
 
 c ======================================================================
 c number of adaptive loops
-      nLOOPs = 2
+      nLOOPs = 5
 
       call read_cfg
-      call create_mesh(4D0,4D0,2.5D0)
+      call create_mesh(4D0,4D0,1.8D0)
       Call draw_mesh('ps/mesh0.ps', 'initial')
       call refine_mesh
       Call draw_mesh('ps/mesh1.ps', 'refined')
