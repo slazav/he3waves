@@ -29,7 +29,7 @@
 
 #include <deal.II/lac/eigen.h>
 
-#include <deal.II/lac/arpack_solver.h>
+//#include <deal.II/lac/arpack_solver.h>
 
 #include <fstream>
 #include <sstream>
@@ -58,7 +58,7 @@ class Polar {
     DoFHandler<dim>      dof_handler;
     FE_Q<dim>            fe;
     ConstraintMatrix     constraints;
-    SparsityPattern      sparsity_pattern;
+    SparsityPattern      sparsity_pattern1,sparsity_pattern2;
 
     Vector<double>       texture;
     Vector<double>       wave;
@@ -112,7 +112,7 @@ void Polar<dim>::run_step(const int stage, const int step){
 
     // mark cells for refinement(30% worse to refine, 3%best to coarse)
     GridRefinement::refine_and_coarsen_fixed_number(triangulation,
-                                    estimated_error_per_cell, 0.1, 0.5	);
+                                    estimated_error_per_cell, 0.1, 0.3);
     // mark additional cells to be refined
     triangulation.prepare_coarsening_and_refinement();
 
@@ -140,12 +140,16 @@ void Polar<dim>::run_step(const int stage, const int step){
       endc = triangulation.end();
     for (; cell!=endc; ++cell){
       for (unsigned int i=0; i<GeometryInfo<dim>::faces_per_cell; i++){
+        if (cell->face(i)->boundary_id() ==
+            numbers::internal_face_boundary_id) continue;
         // x=0 ID=1
         if (std::fabs(cell->face(i)->center()(0)) < 1e-12)
           cell->face(i)->set_boundary_id(1);
         else if (std::fabs(cell->face(i)->center()(0)) < R &&
                  std::fabs(cell->face(i)->center()(1)) < 1e-12)
           cell->face(i)->set_boundary_id(2);
+        else
+          cell->face(i)->set_boundary_id(0);
       }
     }
   }
@@ -189,14 +193,17 @@ void Polar<dim>::run_step(const int stage, const int step){
 
   // assemble the matrices
   SparseMatrix<double> A;
+  SparseMatrix<double> M;
   Vector<double>       B;
 
   B.reinit(dof_handler.n_dofs());
   DynamicSparsityPattern dsp(dof_handler.n_dofs());
   DoFTools::make_sparsity_pattern(dof_handler, dsp, constraints, false);
   //constraints.condense(dsp);
-  sparsity_pattern.copy_from(dsp);
-  A.reinit(sparsity_pattern);
+  sparsity_pattern1.copy_from(dsp);
+  sparsity_pattern2.copy_from(dsp);
+  A.reinit(sparsity_pattern1);
+  M.reinit(sparsity_pattern2);
 
   const QGauss<dim>  quadrature_formula(3);
   FEValues<dim> fe_values(fe, quadrature_formula,
@@ -207,6 +214,7 @@ void Polar<dim>::run_step(const int stage, const int step){
   const unsigned int   nq = quadrature_formula.size();
 
   FullMatrix<double>   Acell(nd,nd);
+  FullMatrix<double>   Mcell(nd,nd);
   Vector<double>       Bcell(nd);
   std::vector<types::global_dof_index> local_dof_indices(nd);
 
@@ -264,6 +272,7 @@ void Polar<dim>::run_step(const int stage, const int step){
     for (; cell!=endc; ++cell) {
       Acell = 0;
       Bcell = 0;
+      Mcell = 0;
 
       fe_values.reinit(cell);
       fe_values.get_function_values(texture, texture_cell);
@@ -272,7 +281,7 @@ void Polar<dim>::run_step(const int stage, const int step){
       for (unsigned int q=0; q<nq; ++q){
         for (unsigned int i=0; i<nd; ++i){
           for (unsigned int j=0; j<nd; ++j){
-            Acell(i,j) +=(fe_values.shape_grad(i,q) *
+            Acell(i,j) -=(fe_values.shape_grad(i,q) *
                           fe_values.shape_grad(j,q) *
                           fe_values.JxW(q));
 
@@ -286,12 +295,19 @@ void Polar<dim>::run_step(const int stage, const int step){
 //                          tgrad_cell[q].norm_square() *
 //                          fe_values.JxW(q));
 
+            Mcell(i,j) +=(fe_values.shape_value(i,q) *
+                          fe_values.shape_value(j,q) *
+                          fe_values.JxW(q));
+
           }
           Bcell(i) += (fe_values.shape_value(i,q) *
                        0.1 *
                        fe_values.JxW(q));
         }
       }
+      Mcell.invert(Mcell);
+      Mcell.mmult(Acell, Acell);
+
       // Finally, transfer the contributions from Acell and
       // Bcell into the global objects.
       cell->get_dof_indices(local_dof_indices);
@@ -323,13 +339,12 @@ void Polar<dim>::run_step(const int stage, const int step){
 //    constraints.distribute(wave);
 
     for (unsigned int i = 0; i<wave.size(); i++) wave[i]=1;
-
-    en=-10.01;
-    GrowingVectorMemory<> mem;
+    en=-20;
+    PrimitiveVectorMemory<> mem;
     EigenInverse<>::AdditionalData data;
-    data.relaxation = 0.01;
+    data.relaxation = 0.1;
     data.use_residual = false;
-    EigenInverse<> solver2(solver_control,mem, data);
+    EigenInverse<> solver2(solver_control,mem,data);
     solver2.solve(en, A, wave);
     constraints.distribute(wave);
     std::cout << "En: " << en << "\n";
