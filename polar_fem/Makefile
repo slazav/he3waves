@@ -1,5 +1,5 @@
 ############################################################
-ANIHOME = ~/rota/ani2D
+ANIHOME = ~/ani2D-3.1
 include $(ANIHOME)/src/Rules.make
 
 LIBS	= -L $(ANILIB) $(LIBAFT) $(LIBFEM) $(LIBLU) $(LIBLMR) $(LIBMBA) \
@@ -15,7 +15,7 @@ run: main
 runi: run
 	make -C png
 
-OBJ  =  main.o solve_u.o mesh.o read_cfg.o
+OBJ  =  main.o solve_u.o mesh.o
 
 
 ############################################################

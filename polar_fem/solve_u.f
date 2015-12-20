@@ -98,6 +98,7 @@ c error messages
       end
 
 
+! build 3x3 elemental matrix
 C ======================================================================
       Subroutine FEM2Dext_u(XY1, XY2, XY3, 
      &           lbE, lbF, lbP, dDATA, iDATA, iSYS,
@@ -138,7 +139,7 @@ c ... set up templates
 c ... compute the stiffness matrix A
       Call fem2Dtri(XY1, XY2, XY3,
      &              GRAD, FEM_P1, GRAD, FEM_P1,
-     &              label, Ddiff_u, dDATA, iDATA, iSYS, 1,
+     &              label, Ddiff_u, dDATA, iDATA, iSYS, 2,
      &              LDA, A, ir, ic)
 
 c ... compute right hand side F
@@ -221,21 +222,52 @@ C ======================================================================
         endif
       end
 
-
-
 C ======================================================================
 C Right hand side
 C ======================================================================
       Integer Function Drhs_u(x, y, label, dDATA, iDATA, iSYS, F)
+        Include 'th.fh'
         Include 'fem2Dtri.fd'
 
         Real*8  dDATA(*), x, y, F(MaxTensorSize, *)
         Integer iDATA(*), label, iSYS(*)
+        integer idx, iv1, iv2, iv3
+        double precision xy1(2), xy2(2), xy3(2)
+        double precision a,b,c,ddd
+        external tri_area0
+        double precision tri_area0
 
         iSYS(1) = 1
         iSYS(2) = 1
 
-        F(1, 1) = 0D0
+c     interpolation code from aniMBA/lintrp2D.f
+        idx = iSYS(3)
+        iv1 = tri(1, idx)
+        iv2 = tri(2, idx)
+        iv3 = tri(3, idx)
+
+        xy1(1) = vrt(1, iv1) - x
+        xy2(1) = vrt(1, iv2) - x
+        xy3(1) = vrt(1, iv3) - x
+        xy1(2) = vrt(2, iv1) - y
+        xy2(2) = vrt(2, iv2) - y
+        xy3(2) = vrt(2, iv3) - y
+
+        a = tri_area0(xy2, xy3)
+        b = tri_area0(xy3, xy1)
+        c = tri_area0(xy1, xy2)
+        ddd = a + b + c
+
+        If(ddd.EQ.0D0) Then
+         a = 1D0
+         ddd = 1D0
+        End if
+
+        F(1,1) = (a * SOL_U(iv1) + b * SOL_U(iv2)
+     &                           + c * SOL_U(iv3)) / ddd
+
+        F(1,1) = -dsin(2D0*F(1,1))/2D0
+
         Drhs_u = TENSOR_SCALAR
 
       End
