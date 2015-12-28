@@ -1,0 +1,2 @@
+This calculation is not accurate (because of large grid step
+near vortices). See dealii_progs/polar_hqv instead.
