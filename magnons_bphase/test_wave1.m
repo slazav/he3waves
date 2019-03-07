@@ -1,5 +1,5 @@
 function test_wave1()
-  addpath /rota/programs/src/he3lib/matlab
+  addpath ~/PROG/he3lib/octave
 
   P=0;   % pressure
   ttc=0.1;    % temperature Tc

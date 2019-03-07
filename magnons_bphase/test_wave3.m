@@ -1,10 +1,10 @@
 function test_wave3()
-  addpath /home/sla/he3lib/lib/matlab
+  addpath ~/PROG/he3lib/octave
 
   P=0;   % pressure
   ttc=0.1;    % temperature Tc
-  cr = he3_text_cperp(ttc,P); % c_perp
-  cz = he3_text_cpar(ttc,P);  % c_par
+  cr = he3_cperp(ttc,P); % c_perp
+  cz = he3_cpar(ttc,P);  % c_par
   fB = he3_nu_b(ttc,P);  % c_par
   bp = 3;
   f0 = 833000;
