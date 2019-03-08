@@ -43,7 +43,6 @@ function [res sres] = wave_calc1d(cr,cz,bp,f0,fB,Imin,ctype, states, Nr)
 
   Ur2 = pi*fB^2/f0 * bp^2 - gyro*Mr*Imin; % quadratic terms in the energy
   res.Urz = Ur2*rr.^2;  % potential
-  mm0 = [1 0 1/2 0 3/8 0 5/16 0 35/128 0 63/256 0];
 
   %%%%
   if ctype==0 % calculate analytically
@@ -95,10 +94,6 @@ function [res sres] = wave_calc1d(cr,cz,bp,f0,fB,Imin,ctype, states, Nr)
   %   [1/r df/dr] = [2f/dr2] = 2a = 2(fp-f0)/dr^2
 
   for ir=1:N % don't use Nr below!
-      x0  = ir;
-      if ir>1 xrm = ir-1; end
-      if ir<N xrp = ir+1; end
-
       % Drr
       Drr(ir,ir) = -2/dr^2;
       if ir>1    Drr(ir,ir-1) = 1/dr^2; end
@@ -118,8 +113,8 @@ function [res sres] = wave_calc1d(cr,cz,bp,f0,fB,Imin,ctype, states, Nr)
 
       % Dr
       if ir>1
-        Dr(x0,xrm) = -1/(2*dr);
-        if ir<N(1); Dr(x0,xrp) =  1/(2*dr); end
+        Dr(ir,ir-1) = -1/(2*dr);
+        if ir<N(1); Dr(ir,ir+1) =  1/(2*dr); end
       end
 
       % U
