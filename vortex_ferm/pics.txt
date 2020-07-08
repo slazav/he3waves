@@ -9,3 +9,5 @@ spwave4.png -- same, but e0=1.24e-04
 pwave1.png e0 = mgap = 2.353e-4
 pwave2.png e0 = 0
   Nx=50; Ny=50; Lx=400; Ly=400; kF = 0.18; m=1; xi=150; Delta=0.01;
+
+misc1 - again some wrong calculations
